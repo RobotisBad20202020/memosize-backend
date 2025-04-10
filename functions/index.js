@@ -38,7 +38,7 @@ app.post("/extract", upload.single("pdf"), async (req, res) => {
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI("YOUR_GEMINI_API_KEY");
+const genAI = new GoogleGenerativeAI("AIzaSyALAMAagZPWgPzaTsvcmuYY0GDSJmi0NxA");
 
 app.post("/generate-flashcards", async (req, res) => {
   const { text } = req.body;
