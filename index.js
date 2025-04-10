@@ -34,7 +34,46 @@ app.post("/extract", upload.single("pdf"), async (req, res) => {
   }
 });
 
+
+// index.js
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI("YOUR_GEMINI_API_KEY");
+
+app.post("/generate-flashcards", async (req, res) => {
+  const { text } = req.body;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const prompt = `
+      You are a flashcard generator.
+      From the following study material, extract key questions and answers.
+      Output the result as JSON array of objects with keys "question" and "answer".
+
+      Text:
+      ${text}
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+
+    const jsonStart = response.indexOf("[");
+    const jsonEnd = response.lastIndexOf("]") + 1;
+    const jsonString = response.slice(jsonStart, jsonEnd);
+    const flashcards = JSON.parse(jsonString);
+
+    res.json({ flashcards });
+  } catch (err) {
+    console.error("🔥 Gemini error:", err.message);
+    res.status(500).json({ error: "Gemini flashcard generation failed" });
+  }
+});
+
+
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
