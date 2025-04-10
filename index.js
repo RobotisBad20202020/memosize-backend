@@ -1,35 +1,39 @@
-const express = require('express');
-const multer = require('multer');
-const pdfParse = require('pdf-parse');
-const cors = require('cors');
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
+const pdfParse = require("pdf-parse");
+const fs = require("fs");
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
+const PORT = process.env.PORT || 8080;
+
+// Enable CORS
 app.use(cors());
 
-app.post('/extract-pdf-text', upload.single('pdf'), async (req, res) => {
-  if (!req.file) return res.status(400).send('No file uploaded.');
+// Setup multer for file uploads
+const upload = multer({ dest: "uploads/" });
 
+// API route to upload PDF and extract text
+app.post("/extract", upload.single("pdf"), async (req, res) => {
   try {
-    const data = await pdfParse(req.file.buffer);
+    if (!req.file) {
+      return res.status(400).json({ error: "No PDF uploaded" });
+    }
 
-    // Optional: Split by page
-    const pages = data.text.split(/\f/); // \f = form feed = page break in PDFs
+    const dataBuffer = fs.readFileSync(req.file.path);
+    const data = await pdfParse(dataBuffer);
 
-    res.json({
-      totalPages: pages.length,
-      textByPage: pages,
-      fullText: data.text,
-    });
+    // Optional: delete file after parsing
+    fs.unlinkSync(req.file.path);
+
+    res.json({ text: data.text });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Failed to parse PDF.');
+    console.error("Error processing PDF:", err);
+    res.status(500).json({ error: "Failed to extract text from PDF" });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('PDF Text Extractor is running.');
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

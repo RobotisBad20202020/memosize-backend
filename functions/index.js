@@ -1,36 +1,39 @@
 const express = require("express");
-const cors = require("cors");
 const multer = require("multer");
+const cors = require("cors");
 const pdfParse = require("pdf-parse");
+const fs = require("fs");
 
 const app = express();
-const upload = multer();
+const PORT = process.env.PORT || 8080;
 
+// Enable CORS
 app.use(cors());
-app.use(express.json());
 
-// Root route for Railway to know the server is alive
-app.get("/", (req, res) => {
-  res.send("✅ Railway server is running!");
-});
+// Setup multer for file uploads
+const upload = multer({ dest: "uploads/" });
 
-// PDF upload and extraction route
+// API route to upload PDF and extract text
 app.post("/extract", upload.single("pdf"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      return res.status(400).json({ error: "No PDF uploaded" });
     }
 
-    const data = await pdfParse(req.file.buffer);
+    const dataBuffer = fs.readFileSync(req.file.path);
+    const data = await pdfParse(dataBuffer);
+
+    // Optional: delete file after parsing
+    fs.unlinkSync(req.file.path);
+
     res.json({ text: data.text });
-  } catch (error) {
-    console.error("Error extracting PDF text:", error);
-    res.status(500).json({ error: "Failed to extract text" });
+  } catch (err) {
+    console.error("Error processing PDF:", err);
+    res.status(500).json({ error: "Failed to extract text from PDF" });
   }
 });
 
 // Start server
-const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
