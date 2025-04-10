@@ -1,39 +1,40 @@
 const express = require("express");
 const multer = require("multer");
-const cors = require("cors");
 const pdfParse = require("pdf-parse");
-const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Enable CORS
+// Middleware
 app.use(cors());
+app.use(express.json());
 
-// Setup multer for file uploads
-const upload = multer({ dest: "uploads/" });
+// Set up Multer for file handling
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// API route to upload PDF and extract text
+// ✅ Root route for sanity check
+app.get("/", (req, res) => {
+  res.send("✅ Memosize Backend is Live!");
+});
+
+// 📄 PDF text extraction route
 app.post("/extract", upload.single("pdf"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No PDF uploaded" });
-    }
-
-    const dataBuffer = fs.readFileSync(req.file.path);
+    const dataBuffer = req.file.buffer;
     const data = await pdfParse(dataBuffer);
 
-    // Optional: delete file after parsing
-    fs.unlinkSync(req.file.path);
-
-    res.json({ text: data.text });
-  } catch (err) {
-    console.error("Error processing PDF:", err);
-    res.status(500).json({ error: "Failed to extract text from PDF" });
+    res.json({
+      text: data.text,
+    });
+  } catch (error) {
+    console.error("❌ Error parsing PDF:", error);
+    res.status(500).json({ error: "Failed to extract PDF text" });
   }
 });
 
-// Start server
+// 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
