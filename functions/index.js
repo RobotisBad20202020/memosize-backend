@@ -11,6 +11,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // Make sure t
 
 app.use(cors());
 app.use(bodyParser.json());
+app.get("/", (req, res) => {
+  res.send("🎉 Memosize backend is running!");
+});
+
 
 app.post("/generate-flashcards", async (req, res) => {
   const { text } = req.body;
